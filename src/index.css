@@ -1,0 +1,8 @@
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+.recharts-wrapper {
+  width: 100% !important;
+  height: 300px !important;
+}
