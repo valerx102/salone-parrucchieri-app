@@ -242,7 +242,8 @@ const App = () => {
 
     try {
       setIsLoading(true);
-      const response = await fetch('http://localhost:5000/api/analyze', {
+      const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await fetch(`${apiUrl}/analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -301,8 +302,7 @@ const App = () => {
             <p>{Object.keys(analysis.overall.sortedOperators)[0]} (CHF {Object.values(analysis.overall.sortedOperators)[0].toFixed(2)})</p>
           )}
           {renderCard("Operatore meno Produttivo", 
-            <p>{Object.keys(analysis.overall.sortedOperators)[Object.keys(analysis.overall.sortedOperators).length - 1]} (CHF {Object.values(analysis.overall.sortedOperators)[Object.values(analysis.overall.sortedOperators).length - 1].toFixed(2)})
-			</p>
+            <p>{Object.keys(analysis.overall.sortedOperators)[Object.keys(analysis.overall.sortedOperators).length - 1]} (CHF {Object.values(analysis.overall.sortedOperators)[Object.values(analysis.overall.sortedOperators).length - 1].toFixed(2)})</p>
           )}
         </div>
       </div>
