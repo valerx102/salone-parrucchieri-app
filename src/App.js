@@ -33,6 +33,7 @@ const Dashboard = () => {
   const [activeSection, setActiveSection] = useState('panoramica');
   const [selectedMonth, setSelectedMonth] = useState('');
   const [fileCount, setFileCount] = useState(0);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const monthOrder = [
     'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -286,7 +287,7 @@ const Dashboard = () => {
   const renderChart = (data, options, ChartComponent) => {
     return (
       <div className="bg-white shadow-md rounded-lg p-4 mb-6">
-        <ChartComponent data={data} options={options} />
+        <ChartComponent data={data} options={{ ...options, maintainAspectRatio: false, responsive: true }} />
       </div>
     );
   };
@@ -320,7 +321,8 @@ const Dashboard = () => {
             <p>{Object.keys(analysis.overall.sortedOperators)[0]} (CHF {Object.values(analysis.overall.sortedOperators)[0].toFixed(2)})</p>
           )}
           {renderCard("Operatore meno Produttivo", 
-            <p>{Object.keys(analysis.overall.sortedOperators)[Object.keys(analysis.overall.sortedOperators).length - 1]} (CHF {Object.values(analysis.overall.sortedOperators)[Object.values(analysis.overall.sortedOperators).length - 1].toFixed(2)})</p>
+            <p>{Object.keys(analysis.overall.sortedOperators)[Object.keys(analysis.overall.sortedOperators).length - 1]} (CHF {Object.values(analysis.overall.sortedOperators)[Object.values(analysis.overall.sortedOperators).length - 1].toFixed(2)})
+			</p>
           )}
         </div>
       </div>
@@ -363,13 +365,19 @@ const Dashboard = () => {
       <div>
         <h2 className="text-2xl font-semibold mb-6">Analisi Globale</h2>
         {renderCard("Andamento Fatturato nel Tempo", 
-          renderChart(revenueData, {responsive: true}, Line)
+          <div style={{height: '300px'}}>
+            {renderChart(revenueData, {}, Line)}
+          </div>
         )}
         {renderCard("Performance Operatori", 
-          renderChart(operatorData, {responsive: true}, Bar)
+          <div style={{height: '300px'}}>
+            {renderChart(operatorData, {}, Bar)}
+          </div>
         )}
         {renderCard("Popolarità Servizi", 
-          renderChart(serviceData, {responsive: true}, Bar)
+          <div style={{height: '300px'}}>
+            {renderChart(serviceData, {}, Bar)}
+          </div>
         )}
       </div>
     );
@@ -384,7 +392,7 @@ const Dashboard = () => {
         <select
           value={selectedMonth}
           onChange={(e) => setSelectedMonth(e.target.value)}
-          className="p-2 border rounded mb-6"
+          className="p-2 border rounded mb-6 w-full md:w-auto"
         >
           <option value="">Seleziona un mese</option>
           {sortMonths(Object.keys(analysis).filter(key => key !== 'overall')).map(month => (
@@ -397,46 +405,54 @@ const Dashboard = () => {
               <p className="text-xl">CHF {analysis[selectedMonth].totalRevenue.toFixed(2)}</p>
             )}
             {renderCard("Top Servizi", 
-              renderChart({
-                labels: Object.keys(analysis[selectedMonth].sortedServices),
-                datasets: [{
-                  label: 'Fatturato per Servizio',
-                  data: Object.values(analysis[selectedMonth].sortedServices),
-                  backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                }]
-              }, {responsive: true}, Bar)
+              <div style={{height: '300px'}}>
+                {renderChart({
+                  labels: Object.keys(analysis[selectedMonth].sortedServices),
+                  datasets: [{
+                    label: 'Fatturato per Servizio',
+                    data: Object.values(analysis[selectedMonth].sortedServices),
+                    backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                  }]
+                }, {}, Bar)}
+              </div>
             )}
             {renderCard("Performance Operatori", 
-              renderChart({
-                labels: Object.keys(analysis[selectedMonth].sortedOperators),
-                datasets: [{
-                  label: 'Fatturato per Operatore',
-                  data: Object.values(analysis[selectedMonth].sortedOperators),
-                  backgroundColor: 'rgba(153, 102, 255, 0.6)',
-                }]
-              }, {responsive: true}, Bar)
+              <div style={{height: '300px'}}>
+                {renderChart({
+                  labels: Object.keys(analysis[selectedMonth].sortedOperators),
+                  datasets: [{
+                    label: 'Fatturato per Operatore',
+                    data: Object.values(analysis[selectedMonth].sortedOperators),
+                    backgroundColor: 'rgba(153, 102, 255, 0.6)',
+                  }]
+                }, {}, Bar)}
+              </div>
             )}
             {renderCard("Valore Ora per Operatore", 
-              renderChart({
-                labels: Object.keys(analysis[selectedMonth].operatorHourlyRates),
-                datasets: [{
-                  label: 'Valore Ora (CHF)',
-                  data: Object.values(analysis[selectedMonth].operatorHourlyRates),
-                  backgroundColor: 'rgba(255, 159, 64, 0.6)',
-                }]
-              }, {responsive: true}, Bar)
+              <div style={{height: '300px'}}>
+                {renderChart({
+                  labels: Object.keys(analysis[selectedMonth].operatorHourlyRates),
+                  datasets: [{
+                    label: 'Valore Ora (CHF)',
+                    data: Object.values(analysis[selectedMonth].operatorHourlyRates),
+                    backgroundColor: 'rgba(255, 159, 64, 0.6)',
+                  }]
+                }, {}, Bar)}
+              </div>
             )}
             {renderCard("Numero Medio Servizi per Operatore", 
-              renderChart({
-                labels: Object.keys(analysis[selectedMonth].operatorServiceCounts),
-                datasets: [{
-                  label: 'Numero Medio Servizi',
-                  data: Object.keys(analysis[selectedMonth].operatorServiceCounts).map(
-                    op => analysis[selectedMonth].operatorServiceCounts[op]
-                  ),
-                  backgroundColor: 'rgba(255, 99, 132, 0.6)',
-                }]
-              }, {responsive: true}, Bar)
+              <div style={{height: '300px'}}>
+                {renderChart({
+                  labels: Object.keys(analysis[selectedMonth].operatorServiceCounts),
+                  datasets: [{
+                    label: 'Numero Medio Servizi',
+                    data: Object.keys(analysis[selectedMonth].operatorServiceCounts).map(
+                      op => analysis[selectedMonth].operatorServiceCounts[op]
+                    ),
+                    backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                  }]
+                }, {}, Bar)}
+              </div>
             )}
           </div>
         )}
@@ -505,40 +521,47 @@ const Dashboard = () => {
       <div>
         <h2 className="text-2xl font-semibold mb-6">Dettagli Operatori</h2>
         {renderCard("Valore Ora per Operatore", 
-          renderChart(hourlyRateData, {responsive: true}, Bar)
+          <div style={{height: '300px'}}>
+            {renderChart(hourlyRateData, {}, Bar)}
+          </div>
         )}
         {renderCard("Numero Medio Servizi per Operatore", 
-          renderChart(serviceCountData, {responsive: true}, Bar)
+          <div style={{height: '300px'}}>
+            {renderChart(serviceCountData, {}, Bar)}
+          </div>
         )}
         {renderCard("Trend Fatturato Operatori", 
-          renderChart(fatturateTrendData, {
-            responsive: true,
-            scales: {
-              y: {
-                beginAtZero: true
+          <div style={{height: '300px'}}>
+            {renderChart(fatturateTrendData, {
+              scales: {
+                y: {
+                  beginAtZero: true
+                }
               }
-            }
-          }, Line)
+            }, Line)}
+          </div>
         )}
         {renderCard("Trend Valore Ora Operatori", 
-          renderChart(hourlyRateTrendData, {
-            responsive: true,
-            scales: {
-              y: {
-                beginAtZero: true
+          <div style={{height: '300px'}}>
+            {renderChart(hourlyRateTrendData, {
+              scales: {
+                y: {
+                  beginAtZero: true
+                }
               }
-            }
-          }, Line)
+            }, Line)}
+          </div>
         )}
         {renderCard("Trend Valore Medio Servizio Operatori", 
-          renderChart(averageServiceValueTrendData, {
-            responsive: true,
-            scales: {
-              y: {
-                beginAtZero: true
+          <div style={{height: '300px'}}>
+            {renderChart(averageServiceValueTrendData, {
+              scales: {
+                y: {
+                  beginAtZero: true
+                }
               }
-            }
-          }, Line)
+            }, Line)}
+          </div>
         )}
       </div>
     );
@@ -583,20 +606,25 @@ const Dashboard = () => {
       <div>
         <h2 className="text-2xl font-semibold mb-6">Dettagli Servizi</h2>
         {renderCard("Popolarità Servizi", 
-          renderChart(popularityData, {responsive: true}, Bar)
+          <div style={{height: '300px'}}>
+            {renderChart(popularityData, {}, Bar)}
+          </div>
         )}
         {renderCard("Redditività Servizi", 
-          renderChart(profitabilityData, {responsive: true}, Bar)
+          <div style={{height: '300px'}}>
+            {renderChart(profitabilityData, {}, Bar)}
+          </div>
         )}
         {renderCard("Trend Popolarità Servizi", 
-          renderChart(trendData, {
-            responsive: true,
-            scales: {
-              y: {
-                beginAtZero: true
+          <div style={{height: '300px'}}>
+            {renderChart(trendData, {
+              scales: {
+                y: {
+                  beginAtZero: true
+                }
               }
-            }
-          }, Line)
+            }, Line)}
+          </div>
         )}
       </div>
     );
@@ -608,7 +636,7 @@ const Dashboard = () => {
         <h2 className="text-2xl font-semibold mb-6">Suggerimenti</h2>
         <button
           onClick={analyzeWithGPT}
-          className="mb-6 px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow hover:bg-blue-600 transition-colors"
+          className="mb-6 px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow hover:bg-blue-600 transition-colors w-full md:w-auto"
         >
           Genera Suggerimenti
         </button>
@@ -631,9 +659,33 @@ const Dashboard = () => {
   });
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      {/* Barra laterale */}
-      <div className="w-64 bg-white shadow-md">
+    <div className="flex flex-col md:flex-row min-h-screen bg-gray-100">
+      {/* Barra laterale per desktop e menu a discesa per mobile */}
+      <div className="md:hidden">
+        <button 
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="w-full bg-blue-500 text-white py-2 px-4 text-left"
+        >
+          Menu
+        </button>
+        {isMobileMenuOpen && (
+          <nav className="bg-white shadow-md">
+            {['panoramica', 'analisiGlobale', 'analisiMensile', 'dettagliOperatori', 'dettagliServizi', 'suggerimenti'].map((section) => (
+              <button
+                key={section}
+                onClick={() => {
+                  setActiveSection(section);
+                  setIsMobileMenuOpen(false);
+                }}
+                className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-200"
+              >
+                {section.charAt(0).toUpperCase() + section.slice(1)}
+              </button>
+            ))}
+          </nav>
+        )}
+      </div>
+      <div className="hidden md:block md:w-64 bg-white shadow-md">
         <nav className="mt-5">
           {['panoramica', 'analisiGlobale', 'analisiMensile', 'dettagliOperatori', 'dettagliServizi', 'suggerimenti'].map((section) => (
             <button
@@ -648,10 +700,10 @@ const Dashboard = () => {
       </div>
 
       {/* Contenuto principale */}
-      <div className="flex-1 p-10 overflow-y-auto">
-        <h1 className="text-3xl font-bold mb-8">Dashboard Salone di Parrucchieri</h1>
+      <div className="flex-1 p-4 md:p-10 overflow-y-auto">
+        <h1 className="text-2xl md:text-3xl font-bold mb-8">Dashboard Salone di Parrucchieri</h1>
         
-        <div {...getRootProps()} className="mb-8 p-6 border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:border-blue-500 transition-colors">
+        <div {...getRootProps()} className="mb-8 p-4 md:p-6 border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:border-blue-500 transition-colors">
           <input {...getInputProps()} />
           {isDragActive ? (
             <p>Rilascia i file qui...</p>
