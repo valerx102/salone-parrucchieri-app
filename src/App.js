@@ -25,7 +25,7 @@ ChartJS.register(
   Legend
 );
 
-const Dashboard = () => {
+const App = () => {
   const [monthlyData, setMonthlyData] = useState({});
   const [analysis, setAnalysis] = useState(null);
   const [suggestions, setSuggestions] = useState('');
@@ -33,6 +33,7 @@ const Dashboard = () => {
   const [activeSection, setActiveSection] = useState('panoramica');
   const [selectedMonth, setSelectedMonth] = useState('');
   const [fileCount, setFileCount] = useState(0);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const monthOrder = [
     'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -241,28 +242,12 @@ const Dashboard = () => {
 
     try {
       setIsLoading(true);
-      const apiKey = process.env.REACT_APP_GPT_API_KEY;
-      if (!apiKey) {
-        throw new Error('API key non trovata');
-      }
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      const response = await fetch('http://localhost:5000/api/analyze', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
         },
-        body: JSON.stringify({
-          model: "gpt-4",
-          messages: [{
-            role: "system",
-            content: "Sei un esperto consulente per saloni di parrucchieri. Analizza i dati forniti e genera suggerimenti dettagliati per migliorare il business."
-          }, {
-            role: "user",
-            content: `Analizza questi dati del salone e l'analisi fornita per diversi mesi. Genera 3-5 suggerimenti dettagliati per migliorare il business, concentrandoti su trend, punti di forza e di debolezza degli operatori e dei servizi nel tempo: 
-            Dati: ${JSON.stringify(monthlyData)}
-            Analisi: ${JSON.stringify(analysis)}`
-          }]
-        })
+        body: JSON.stringify({ monthlyData, analysis })
       });
 
       if (!response.ok) {
@@ -270,13 +255,9 @@ const Dashboard = () => {
       }
 
       const result = await response.json();
-      if (result.choices && result.choices.length > 0 && result.choices[0].message) {
-        setSuggestions(result.choices[0].message.content);
-      } else {
-        throw new Error('Struttura della risposta da GPT non prevista');
-      }
+      setSuggestions(result);
     } catch (error) {
-      console.error('Errore nella chiamata a GPT:', error);
+      console.error('Errore nella chiamata al server:', error);
       setSuggestions("Mi dispiace, si è verificato un errore nell'analisi dei dati. " + error.message);
     } finally {
       setIsLoading(false);
@@ -286,7 +267,7 @@ const Dashboard = () => {
   const renderChart = (data, options, ChartComponent) => {
     return (
       <div className="bg-white shadow-md rounded-lg p-4 mb-6">
-        <ChartComponent data={data} options={options} />
+        <ChartComponent data={data} options={{ ...options, maintainAspectRatio: false, responsive: true }} />
       </div>
     );
   };
@@ -363,13 +344,19 @@ const Dashboard = () => {
       <div>
         <h2 className="text-2xl font-semibold mb-6">Analisi Globale</h2>
         {renderCard("Andamento Fatturato nel Tempo", 
-          renderChart(revenueData, {responsive: true}, Line)
+          <div style={{height: '300px'}}>
+            {renderChart(revenueData, {}, Line)}
+          </div>
         )}
         {renderCard("Performance Operatori", 
-          renderChart(operatorData, {responsive: true}, Bar)
+          <div style={{height: '300px'}}>
+            {renderChart(operatorData, {}, Bar)}
+          </div>
         )}
         {renderCard("Popolarità Servizi", 
-          renderChart(serviceData, {responsive: true}, Bar)
+          <div style={{height: '300px'}}>
+            {renderChart(serviceData, {}, Bar)}
+          </div>
         )}
       </div>
     );
@@ -384,7 +371,7 @@ const Dashboard = () => {
         <select
           value={selectedMonth}
           onChange={(e) => setSelectedMonth(e.target.value)}
-          className="p-2 border rounded mb-6"
+          className="p-2 border rounded mb-6 w-full md:w-auto"
         >
           <option value="">Seleziona un mese</option>
           {sortMonths(Object.keys(analysis).filter(key => key !== 'overall')).map(month => (
@@ -397,46 +384,54 @@ const Dashboard = () => {
               <p className="text-xl">CHF {analysis[selectedMonth].totalRevenue.toFixed(2)}</p>
             )}
             {renderCard("Top Servizi", 
-              renderChart({
-                labels: Object.keys(analysis[selectedMonth].sortedServices),
-                datasets: [{
-                  label: 'Fatturato per Servizio',
-                  data: Object.values(analysis[selectedMonth].sortedServices),
-                  backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                }]
-              }, {responsive: true}, Bar)
+              <div style={{height: '300px'}}>
+                {renderChart({
+                  labels: Object.keys(analysis[selectedMonth].sortedServices),
+                  datasets: [{
+                    label: 'Fatturato per Servizio',
+                    data: Object.values(analysis[selectedMonth].sortedServices),
+                    backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                  }]
+                }, {}, Bar)}
+              </div>
             )}
             {renderCard("Performance Operatori", 
-              renderChart({
-                labels: Object.keys(analysis[selectedMonth].sortedOperators),
-                datasets: [{
-                  label: 'Fatturato per Operatore',
-                  data: Object.values(analysis[selectedMonth].sortedOperators),
-                  backgroundColor: 'rgba(153, 102, 255, 0.6)',
-                }]
-              }, {responsive: true}, Bar)
+              <div style={{height: '300px'}}>
+                {renderChart({
+                  labels: Object.keys(analysis[selectedMonth].sortedOperators),
+                  datasets: [{
+                    label: 'Fatturato per Operatore',
+                    data: Object.values(analysis[selectedMonth].sortedOperators),
+                    backgroundColor: 'rgba(153, 102, 255, 0.6)',
+                  }]
+                }, {}, Bar)}
+              </div>
             )}
             {renderCard("Valore Ora per Operatore", 
-              renderChart({
-                labels: Object.keys(analysis[selectedMonth].operatorHourlyRates),
-                datasets: [{
-                  label: 'Valore Ora (CHF)',
-                  data: Object.values(analysis[selectedMonth].operatorHourlyRates),
-                  backgroundColor: 'rgba(255, 159, 64, 0.6)',
-                }]
-              }, {responsive: true}, Bar)
+              <div style={{height: '300px'}}>
+                {renderChart({
+                  labels: Object.keys(analysis[selectedMonth].operatorHourlyRates),
+                  datasets: [{
+                    label: 'Valore Ora (CHF)',
+                    data: Object.values(analysis[selectedMonth].operatorHourlyRates),
+                    backgroundColor: 'rgba(255, 159, 64, 0.6)',
+                  }]
+                }, {}, Bar)}
+              </div>
             )}
             {renderCard("Numero Medio Servizi per Operatore", 
-              renderChart({
-                labels: Object.keys(analysis[selectedMonth].operatorServiceCounts),
-                datasets: [{
-                  label: 'Numero Medio Servizi',
-                  data: Object.keys(analysis[selectedMonth].operatorServiceCounts).map(
-                    op => analysis[selectedMonth].operatorServiceCounts[op]
-                  ),
-                  backgroundColor: 'rgba(255, 99, 132, 0.6)',
-                }]
-              }, {responsive: true}, Bar)
+              <div style={{height: '300px'}}>
+                {renderChart({
+                  labels: Object.keys(analysis[selectedMonth].operatorServiceCounts),
+                  datasets: [{
+                    label: 'Numero Medio Servizi',
+                    data: Object.keys(analysis[selectedMonth].operatorServiceCounts).map(
+                      op => analysis[selectedMonth].operatorServiceCounts[op]
+                    ),
+                    backgroundColor: 'rgba(255, 99, 132, 0.6)',
+                  }]
+                }, {}, Bar)}
+              </div>
             )}
           </div>
         )}
@@ -505,40 +500,47 @@ const Dashboard = () => {
       <div>
         <h2 className="text-2xl font-semibold mb-6">Dettagli Operatori</h2>
         {renderCard("Valore Ora per Operatore", 
-          renderChart(hourlyRateData, {responsive: true}, Bar)
+          <div style={{height: '300px'}}>
+            {renderChart(hourlyRateData, {}, Bar)}
+          </div>
         )}
         {renderCard("Numero Medio Servizi per Operatore", 
-          renderChart(serviceCountData, {responsive: true}, Bar)
+          <div style={{height: '300px'}}>
+            {renderChart(serviceCountData, {}, Bar)}
+          </div>
         )}
         {renderCard("Trend Fatturato Operatori", 
-          renderChart(fatturateTrendData, {
-            responsive: true,
-            scales: {
-              y: {
-                beginAtZero: true
+          <div style={{height: '300px'}}>
+            {renderChart(fatturateTrendData, {
+              scales: {
+                y: {
+                  beginAtZero: true
+                }
               }
-            }
-          }, Line)
+            }, Line)}
+          </div>
         )}
         {renderCard("Trend Valore Ora Operatori", 
-          renderChart(hourlyRateTrendData, {
-            responsive: true,
-            scales: {
-              y: {
-                beginAtZero: true
+          <div style={{height: '300px'}}>
+            {renderChart(hourlyRateTrendData, {
+              scales: {
+                y: {
+                  beginAtZero: true
+                }
               }
-            }
-          }, Line)
+            }, Line)}
+          </div>
         )}
         {renderCard("Trend Valore Medio Servizio Operatori", 
-          renderChart(averageServiceValueTrendData, {
-            responsive: true,
-            scales: {
-              y: {
-                beginAtZero: true
+          <div style={{height: '300px'}}>
+            {renderChart(averageServiceValueTrendData, {
+              scales: {
+                y: {
+                  beginAtZero: true
+                }
               }
-            }
-          }, Line)
+            }, Line)}
+          </div>
         )}
       </div>
     );
@@ -583,20 +585,25 @@ const Dashboard = () => {
       <div>
         <h2 className="text-2xl font-semibold mb-6">Dettagli Servizi</h2>
         {renderCard("Popolarità Servizi", 
-          renderChart(popularityData, {responsive: true}, Bar)
+          <div style={{height: '300px'}}>
+            {renderChart(popularityData, {}, Bar)}
+          </div>
         )}
         {renderCard("Redditività Servizi", 
-          renderChart(profitabilityData, {responsive: true}, Bar)
+          <div style={{height: '300px'}}>
+            {renderChart(profitabilityData, {}, Bar)}
+          </div>
         )}
         {renderCard("Trend Popolarità Servizi", 
-          renderChart(trendData, {
-            responsive: true,
-            scales: {
-              y: {
-                beginAtZero: true
+          <div style={{height: '300px'}}>
+            {renderChart(trendData, {
+              scales: {
+                y: {
+                  beginAtZero: true
+                }
               }
-            }
-          }, Line)
+            }, Line)}
+          </div>
         )}
       </div>
     );
@@ -608,7 +615,7 @@ const Dashboard = () => {
         <h2 className="text-2xl font-semibold mb-6">Suggerimenti</h2>
         <button
           onClick={analyzeWithGPT}
-          className="mb-6 px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow hover:bg-blue-600 transition-colors"
+          className="mb-6 px-6 py-3 bg-blue-500 text-white font-semibold rounded-lg shadow hover:bg-blue-600 transition-colors w-full md:w-auto"
         >
           Genera Suggerimenti
         </button>
@@ -631,9 +638,33 @@ const Dashboard = () => {
   });
 
   return (
-    <div className="flex min-h-screen bg-gray-100">
-      {/* Barra laterale */}
-      <div className="w-64 bg-white shadow-md">
+    <div className="flex flex-col md:flex-row min-h-screen bg-gray-100">
+      {/* Barra laterale per desktop e menu a discesa per mobile */}
+      <div className="md:hidden">
+        <button 
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          className="w-full bg-blue-500 text-white py-2 px-4 text-left"
+        >
+          Menu
+        </button>
+        {isMobileMenuOpen && (
+          <nav className="bg-white shadow-md">
+            {['panoramica', 'analisiGlobale', 'analisiMensile', 'dettagliOperatori', 'dettagliServizi', 'suggerimenti'].map((section) => (
+              <button
+                key={section}
+                onClick={() => {
+                  setActiveSection(section);
+                  setIsMobileMenuOpen(false);
+                }}
+                className="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-200"
+              >
+                {section.charAt(0).toUpperCase() + section.slice(1)}
+              </button>
+            ))}
+          </nav>
+        )}
+      </div>
+      <div className="hidden md:block md:w-64 bg-white shadow-md">
         <nav className="mt-5">
           {['panoramica', 'analisiGlobale', 'analisiMensile', 'dettagliOperatori', 'dettagliServizi', 'suggerimenti'].map((section) => (
             <button
@@ -648,10 +679,10 @@ const Dashboard = () => {
       </div>
 
       {/* Contenuto principale */}
-      <div className="flex-1 p-10 overflow-y-auto">
-        <h1 className="text-3xl font-bold mb-8">Dashboard Salone di Parrucchieri</h1>
+      <div className="flex-1 p-4 md:p-10 overflow-y-auto">
+        <h1 className="text-2xl md:text-3xl font-bold mb-8">Dashboard Salone di Parrucchieri</h1>
         
-        <div {...getRootProps()} className="mb-8 p-6 border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:border-blue-500 transition-colors">
+        <div {...getRootProps()} className="mb-8 p-4 md:p-6 border-2 border-dashed border-gray-300 rounded-lg text-center cursor-pointer hover:border-blue-500 transition-colors">
           <input {...getInputProps()} />
           {isDragActive ? (
             <p>Rilascia i file qui...</p>
@@ -681,4 +712,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default App;
