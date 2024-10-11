@@ -301,7 +301,8 @@ const App = () => {
             <p>{Object.keys(analysis.overall.sortedOperators)[0]} (CHF {Object.values(analysis.overall.sortedOperators)[0].toFixed(2)})</p>
           )}
           {renderCard("Operatore meno Produttivo", 
-            <p>{Object.keys(analysis.overall.sortedOperators)[Object.keys(analysis.overall.sortedOperators).length - 1]} (CHF {Object.values(analysis.overall.sortedOperators)[Object.values(analysis.overall.sortedOperators).length - 1].toFixed(2)})</p>
+            <p>{Object.keys(analysis.overall.sortedOperators)[Object.keys(analysis.overall.sortedOperators).length - 1]} (CHF {Object.values(analysis.overall.sortedOperators)[Object.values(analysis.overall.sortedOperators).length - 1].toFixed(2)})
+			</p>
           )}
         </div>
       </div>
